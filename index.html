@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoViz — Interactive DSA Visualiser</title>
+  <meta name="description" content="AlgoViz: Step-by-step animated visualisations of 15+ data structures and algorithms for first-year engineering students." />
+  <meta name="keywords" content="algorithms, data structures, DSA, visualiser, sorting, graphs, trees, BFS, DFS, Dijkstra" />
+  <meta name="author" content="AlgoViz" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- D3.js -->
+  <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+
+  <!-- CodeMirror for code editor -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/dracula.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/python/python.min.js"></script>
+
+  <!-- App Styles -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════════════════ -->
+  <header id="header">
+    <a class="logo" href="/" title="AlgoViz Home">
+      <div class="logo-icon">⚡</div>
+      <span class="logo-text">AlgoViz</span>
+    </a>
+    <div class="badge">DSA Visualiser</div>
+
+    <div class="header-right">
+      <button id="btn-quiz" class="header-btn" title="Toggle quiz mode" aria-label="Toggle quiz mode">
+        🧠 Quiz Mode
+      </button>
+      <button id="btn-toggle-code" class="header-btn active" title="Toggle code panel" aria-label="Toggle code sandbox">
+        ⌨ Code
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       SIDEBAR — Algorithm Selector
+  ══════════════════════════════════════════════════════════════ -->
+  <aside id="sidebar" role="navigation" aria-label="Algorithm selector">
+    <div id="sidebar-content">
+      <!-- Populated by main.js -->
+      <div class="sidebar-section" style="padding:20px 16px; text-align:center; color:var(--text-muted); font-size:0.8rem;">
+        Loading algorithms…
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CANVAS AREA — Visualiser + Controls
+  ══════════════════════════════════════════════════════════════ -->
+  <main id="canvas-area" role="main">
+
+    <!-- Input Panel -->
+    <div id="input-panel" aria-label="Algorithm input controls">
+      <!-- Array input (sorting/searching/tree) -->
+      <div id="array-input-group" class="input-group" style="display:none;">
+        <label class="input-label" for="array-input">Array:</label>
+        <input
+          id="array-input"
+          type="text"
+          class="input-field"
+          placeholder="e.g. 38, 27, 43, 3, 9"
+          aria-label="Array input"
+        />
+        <button id="btn-apply-input" class="btn btn-sm" title="Apply input">↵ Apply</button>
+
+        <!-- Size + generate (inline) -->
+        <label class="input-label" for="array-size" style="margin-left:8px;">Size:</label>
+        <input
+          id="array-size"
+          type="number"
+          class="input-field"
+          value="20"
+          min="5"
+          max="50"
+          style="width:70px;"
+          aria-label="Array size"
+        />
+        <button id="btn-generate" class="btn btn-primary btn-sm" title="Generate random array">
+          ⟳ Random
+        </button>
+      </div>
+
+      <!-- Search target (searching algos only) -->
+      <div id="search-target-group" class="input-group">
+        <label class="input-label" for="search-target">Target:</label>
+        <input
+          id="search-target"
+          type="number"
+          class="input-field"
+          placeholder="e.g. 42"
+          style="width:90px;"
+          aria-label="Search target value"
+        />
+      </div>
+    </div>
+
+    <!-- Visualisation SVG Canvas -->
+    <div id="viz-canvas" role="img" aria-label="Algorithm visualisation canvas">
+      <svg id="main-svg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+
+      <!-- Graph controls — overlaid top-right of the canvas -->
+      <div id="graph-controls" aria-label="Graph builder controls">
+        <div class="graph-ctrl-title">Graph Builder</div>
+        <div class="graph-mode-btns">
+          <button id="graph-mode-node" class="mode-btn active" title="Click canvas to add nodes">⧁ Node</button>
+          <button id="graph-mode-edge" class="mode-btn" title="Drag between nodes to add edges">— Edge</button>
+        </div>
+        <button id="btn-graph-random" class="btn btn-primary btn-sm" style="width:100%;">⟳ Reset Graph</button>
+        <button id="btn-graph-run" class="btn btn-sm" style="width:100%;">▶ Run Algorithm</button>
+        <div class="graph-info">Click canvas to add nodes.<br>Switch to Edge mode, then drag node→node to connect.</div>
+      </div>
+
+      <!-- Step description overlay -->
+      <div id="step-description" aria-live="polite" aria-atomic="true">
+        <div class="step-num" id="step-num">Step 1 of 1</div>
+        <div class="step-text" id="step-text">Select an algorithm from the sidebar to begin.</div>
+      </div>
+
+      <!-- Quiz panel (draggable) -->
+      <div id="quiz-panel" aria-live="polite" role="dialog" aria-label="Quiz prompt">
+        <div class="quiz-drag-handle" id="quiz-drag-handle" title="Drag to move">
+          <span class="quiz-drag-dots">⠿</span>
+          <span class="quiz-drag-label">Quiz</span>
+        </div>
+        <div class="quiz-question" id="quiz-question">What will happen in the next step?</div>
+        <div class="quiz-options" id="quiz-options">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Playback Controls Bar -->
+    <div id="controls-bar" aria-label="Playback controls">
+      <button id="btn-restart" class="ctrl-btn" title="Restart" aria-label="Restart">⟳</button>
+      <button id="btn-step-back" class="ctrl-btn" title="Step Back" aria-label="Step back" disabled>◀</button>
+      <button id="btn-play" class="ctrl-btn" title="Play" aria-label="Play/Pause">▶</button>
+      <button id="btn-step-fwd" class="ctrl-btn" title="Step Forward" aria-label="Step forward">▶|</button>
+
+      <div class="controls-sep"></div>
+
+      <div class="speed-group" aria-label="Playback speed">
+        <span class="speed-label">Speed</span>
+        <input
+          id="speed-slider"
+          type="range"
+          class="speed-slider"
+          min="0.5"
+          max="3"
+          step="0.5"
+          value="1"
+          aria-label="Playback speed slider"
+          aria-valuemin="0.5"
+          aria-valuemax="3"
+          aria-valuenow="1"
+        />
+        <span id="speed-value" class="speed-value">1x</span>
+      </div>
+
+      <div class="controls-sep"></div>
+
+      <div class="progress-bar" role="progressbar" aria-label="Algorithm progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+      </div>
+
+      <div id="step-counter" class="step-counter" aria-live="polite">—</div>
+    </div>
+
+    <!-- Complexity Panel -->
+    <div id="complexity-panel" aria-label="Time and space complexity">
+      <span class="complexity-title">Complexity</span>
+      <div class="complexity-items">
+        <div class="complexity-item">
+          <span class="complexity-key">Best:</span>
+          <span id="complexity-best" class="complexity-val best">—</span>
+        </div>
+        <div class="complexity-item">
+          <span class="complexity-key">Avg:</span>
+          <span id="complexity-avg" class="complexity-val avg">—</span>
+        </div>
+        <div class="complexity-item">
+          <span class="complexity-key">Worst:</span>
+          <span id="complexity-worst" class="complexity-val worst">—</span>
+        </div>
+        <div class="complexity-item">
+          <span class="complexity-key">Space:</span>
+          <span id="complexity-space" class="complexity-val space">—</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       CODE PANEL — Python Sandbox
+  ══════════════════════════════════════════════════════════════ -->
+  <aside id="code-panel" aria-label="Python code sandbox">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="panel-title-icon">🐍</span>
+        Python Sandbox
+      </div>
+      <div class="panel-actions">
+        <button id="copy-btn" class="btn btn-sm" title="Copy code to clipboard" aria-label="Copy code">⎘ Copy</button>
+        <button id="clear-output-btn" class="btn btn-sm" title="Clear output" aria-label="Clear output">✕ Clear</button>
+      </div>
+    </div>
+
+    <div id="editor-container" aria-label="Code editor">
+      <div id="code-editor"></div>
+    </div>
+
+    <div style="padding: 8px 14px; background: var(--bg-card); border-top: 1px solid var(--border); display:flex; align-items:center; justify-content: space-between; flex-shrink:0;">
+      <span style="font-size:0.7rem; color:var(--text-muted);">Ctrl+Enter to run</span>
+      <button id="run-btn" class="run-btn" aria-label="Run Python code">▶ Run</button>
+    </div>
+
+    <div id="code-output" aria-live="polite" aria-label="Code output" role="log">
+      <span class="output-line output-info">Select an algorithm and click Run ▶</span>
+    </div>
+  </aside>
+
+</div><!-- /#app -->
+
+<!-- ── Toast Container ─────────────────────────────────────────────────────── -->
+<div id="toast-container" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- ── Tooltip ─────────────────────────────────────────────────────────────── -->
+<div id="tooltip" class="tooltip" role="tooltip"></div>
+
+<!-- ── JavaScript — Algorithm Step Generators ──────────────────────────────── -->
+<script src="/static/js/algorithms/sorting.js"></script>
+<script src="/static/js/algorithms/searching.js"></script>
+<script src="/static/js/algorithms/graph.js"></script>
+<script src="/static/js/algorithms/trees.js"></script>
+
+<!-- ── JavaScript — Core ───────────────────────────────────────────────────── -->
+<script src="/static/js/visualiser.js"></script>
+<script src="/static/js/sandbox.js"></script>
+<script src="/static/js/main.js"></script>
+
+<!-- ── Fix duplicate ID & Input Panel init ─────────────────────────────────── -->
+<script>
+  // Fix: array-input-group ID was duplicated; handle both by class name in main.js
+  // The generate button and array-input are wired in main.js
+  
+  // CodeMirror extra setup
+  document.addEventListener('DOMContentLoaded', () => {
+    // Make editor fill container
+    const editorEl = document.querySelector('.CodeMirror');
+    if (editorEl) {
+      editorEl.style.height = '100%';
+      editorEl.style.fontFamily = "'JetBrains Mono', monospace";
+      editorEl.style.fontSize = '12px';
+    }
+  });
+</script>
+
+</body>
+</html>
