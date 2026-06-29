@@ -1,3 +1,8 @@
+![Python](https://img.shields.io/badge/Python-3.x-blue)
+![Flask](https://img.shields.io/badge/Flask-Web_Framework-black)
+![HTML5/Canvas](https://img.shields.io/badge/HTML5-Canvas-orange)
+![Algorithms](https://img.shields.io/badge/Algorithms-Data_Structures-green)
+![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)
 # 📊 AlgoViz: Interactive Algorithm & Data Structure Sandbox
 
 An immersive, full-stack visualization and safe code execution engine built using **Python Flask**, **HTML5 Canvas/JavaScript**, and an isolated sandboxed processing container. 
